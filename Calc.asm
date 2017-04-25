@@ -10,7 +10,8 @@ operadores 		db		'+-*/'
 .UDATA
 expresion		resb	32
 A_evaluar		resb	42
-
+Op				resb	8
+prec			resb	16
 
 .CODE
 	.STARTUP
@@ -48,7 +49,7 @@ Ciclo:
 	;es un operando
 	;ciclo, hasta encontrar operador
 	mov byte [A_evaluar+EDI], '%'
-	inc edi
+	inc EDI
 	
 cicloOperando:
 	mov al, byte[EBX]
@@ -91,8 +92,16 @@ Pos_Error:
 	jmp Error
 
 NoError:
-	PutCh byte[EBX]
-	nwln
+Num_Letra:
+	XOR BL,BL
+	mov BL,byte[EBX] 
+	mov byte[Op],BL
+	mov byte[A_evaluar],Op
+	inc EBX
+	jmp Ciclo
+Simb:
+	call Prioridad
+	mov byte[A_evaluar],Op
 	inc EBX
 	jmp Ciclo
 
@@ -102,3 +111,33 @@ Done:
 fin:
 	nwln
 	.EXIT
+
+Prioridad:
+	XOR BL, BL
+	mov BL, byte[EBX]
+	mov [prec], BL
+	pop CX
+	cmp [prec],CX
+	je Igual
+	jl Menor
+	jg Mayor
+Igual:
+	mov [Op], CX
+	mov byte[A_evaluar],Op
+	push prec
+	inc EBX
+	jmp Ciclo
+Mayor:
+	push prec
+	inc EBX
+	jmp Ciclo
+Menor:
+	cmp BP,SP
+	je Siguiente
+	mov byte[A_evaluar], '@'
+	mov [A_evaluar], CX
+	jmp Menor
+Siguiente:
+	push prec
+	inc EBX
+	jmp Ciclo
