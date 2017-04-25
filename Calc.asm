@@ -29,6 +29,14 @@ Ciclo:
 	;Error si esta entre 9 y a mayuscula, Pero verificar que no sea un igual
 	;Error si es menor a 0 y diferente de un operador valido
 	;+-*/()
+	cmp byte[EBX], 'b'
+	je NoError
+	cmp byte[EBX], 'd'
+	je NoError
+	cmp byte[EBX], 'h'
+	je NoError
+	cmp byte[EBX], 'o'
+	je NoError
 	cmp byte[EBX], '9'
 	jb Pos_Error
 	cmp byte[EBX], 'z'
@@ -50,7 +58,6 @@ cicloOperando:
 	jb  operador
 	cmp byte[EBX], '9'
 	ja	Error
-	
 	
 operador:		
 	mov ESI, operadores			;Consigue el inicio de operadores. ESI porque es uno de los registros que permiten buscar dentro de la memoria.
@@ -84,6 +91,8 @@ Pos_Error:
 	jmp Error
 
 NoError:
+	PutCh byte[EBX]
+	nwln
 	inc EBX
 	jmp Ciclo
 
