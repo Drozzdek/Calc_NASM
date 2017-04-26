@@ -10,8 +10,6 @@ operadores 		db		'+-*/'
 .UDATA
 expresion		resb	32
 A_evaluar		resb	42
-Op				resb	8
-prec			resb	16
 
 .CODE
 	.STARTUP
@@ -48,11 +46,11 @@ Ciclo:
 	jb Pos_Error
 	;es un operando
 	;ciclo, hasta encontrar operador
-	mov byte [A_evaluar+EDI], '%'
+	mov byte [A_evaluar+EDI], '@'
 	inc EDI
 	
 cicloOperando:
-	mov al, byte[EBX]
+	mov AL, byte[EBX]
 	mov byte [A_evaluar+EDI], AL
 	inc EBX
 	cmp byte[EBX], '0'
@@ -62,6 +60,7 @@ cicloOperando:
 	
 operador:		
 	mov ESI, operadores			;Consigue el inicio de operadores. ESI porque es uno de los registros que permiten buscar dentro de la memoria.
+	call Prioridad
 
 Error:
 	PutStr msg_Error
@@ -93,15 +92,14 @@ Pos_Error:
 
 NoError:
 Num_Letra:
-	XOR BL,BL
-	mov BL,byte[EBX] 
-	mov byte[Op],BL
-	mov byte[A_evaluar],Op
+	mov BL, byte[EBX]
+	mov A_evaluar, BL
 	inc EBX
 	jmp Ciclo
 Simb:
-	call Prioridad
-	mov byte[A_evaluar],Op
+	mov A_evaluar, '@'
+	mov BL, byte[EBX]
+	mov A_evaluar, BL			;Aqui deberia pedir por la prioridad de operaciones y resolver de acuerdo a eso
 	inc EBX
 	jmp Ciclo
 
@@ -112,32 +110,19 @@ fin:
 	nwln
 	.EXIT
 
+;Esta funcion me da la prioridad para la pila y decision de operadores
 Prioridad:
-	XOR BL, BL
-	mov BL, byte[EBX]
-	mov [prec], BL
-	pop CX
-	cmp [prec],CX
-	je Igual
-	jl Menor
-	jg Mayor
-Igual:
-	mov [Op], CX
-	mov byte[A_evaluar],Op
-	push prec
-	inc EBX
-	jmp Ciclo
-Mayor:
-	push prec
-	inc EBX
-	jmp Ciclo
-Menor:
-	cmp BP,SP
-	je Siguiente
-	mov byte[A_evaluar], '@'
-	mov [A_evaluar], CX
-	jmp Menor
+	cmp AL, [operadores+ESI]		;El SI es el que tiene la prioridad del operador y va de 0 hasta donde la posicion donde la encontre.
+	jne Siguiente					;Si no lo a encontrado, salte al siguiente
+	ret								;De lo contrario, retorne a donde lo encontro
 Siguiente:
-	push prec
-	inc EBX
-	jmp Ciclo
+	inc ESI
+	jmp Prioridad
+
+;Decide de acuerdo al algoritmo de postfijo que hacer con el operador conseguido
+;Meto a la pila si es mayor
+;Si es menor, lo saco, lo agrego a la expresion
+;Lo vuelvo a comparar
+;En postfijo hay que tener en cuenta los parenesis que en la expresion final no aparecen
+Ev_Operador:
+	
