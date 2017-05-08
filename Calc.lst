@@ -149,167 +149,711 @@
    148                              <1> %endmacro
    149                              <1> ;;-------------------------------------------------------------------
    150                              <1> 
-     2                                  
-     3                                  .DATA
-     3                              <1>  segment .data
-     4 00000000 496E67726573652075-     msg_Inicio		db		'Ingrese una expresion: ',0
-     4 00000009 6E6120657870726573-
-     4 00000012 696F6E3A2000       
-     5 00000018 4C6120726573707565-     msg_Final		db		'La respuesta es: ',0
-     5 00000021 7374612065733A2000 
-     6 0000002A 4572726F722E204361-     msg_Error		db		'Error. Caracter invalido.',0
-     6 00000033 72616374657220696E-
-     6 0000003C 76616C69646F2E00   
-     7 00000044 00                      nueva_prec		db		0
-     8 00000045 00                      pila_prec		db		0
-     9 00000046 00                      cont 			db		0
-    10 00000047 00                      largo			db		0
-    11                                  
-    12                                  .UDATA
-    12                              <1>  segment .bss
-    13 00000000 <res 00000040>          expresion		resb	64
-    14 00000040 <res 00000080>          A_evaluar		resb	128
-    15                                  
-    16                                  .CODE
-    16                              <1>  segment .data
-    16                              <1>  segment .bss
-    16                              <1>  segment .text
-    17                                  	.STARTUP
-    17                              <1> 
-    17                              <1>  global _start
-    17                              <1> _start:
-    18 00000000 55                      	push EBP
-    19 00000001 89E5                    	mov EBP,ESP
-    20                                  	PutStr msg_Inicio
-    20 00000003 51                  <1>  push ECX
-    20 00000004 B9[00000000]        <1>  mov ECX,%1
-    20 00000009 E8(00000000)        <1>  call proc_PutStr
-    20 0000000E 59                  <1>  pop ECX
-    21                                  	GetStr expresion
-    21 0000000F 56                  <1>  push ESI
-    21 00000010 57                  <1>  push EDI
-    21 00000011 BF[00000000]        <1>  mov EDI,%1
-    21 00000016 BE51000000          <1>  mov ESI,%2
-    21 0000001B E8(00000000)        <1>  call proc_GetStr
-    21 00000020 5F                  <1>  pop EDI
-    21 00000021 5E                  <1>  pop ESI
-    22 00000022 BB[00000000]            	mov EBX, expresion
-    23 00000027 31FF                    	XOR EDI,EDI
-    24                                  ;#############################################################################################################
-    25                                  cicloParser:
-    26 00000029 31C0                    	XOR EAX,EAX
-    27 0000002B 31C9                    	XOR ECX,ECX
-    28 0000002D 31D2                    	XOR EDX,EDX
-    29 0000002F 31F6                    	XOR ESI,ESI
-    30 00000031 803B00                  	cmp byte[EBX],0
-    31 00000034 0F84BC000000            	je	Respuesta
-    32 0000003A 803B28                  	cmp byte[EBX],'('
-    33 0000003D 0F82CD000000            	jb	Error
-    34 00000043 803B62                  	cmp byte[EBX],'b'
-    35 00000046 7446                    	je	Bin
-    36 00000048 803B68                  	cmp byte[EBX],'h'
-    37 0000004B 7444                    	je	Hex
-    38 0000004D 803B6F                  	cmp byte[EBX],'o'
-    39 00000050 7442                    	je	Oct
-    40 00000052 803B46                  	cmp byte[EBX],'F'
-    41 00000055 0F87B5000000            	ja	Error
-    42 0000005B 803B30                  	cmp byte[EBX],'0'
-    43 0000005E 0F828C000000            	jb	Operador
-    44 00000064 803B39                  	cmp byte[EBX],'9'
-    45 00000067 7702                    	ja	N_Hex
-    46 00000069 EB2C                    	jmp N_Val
-    47                                  N_Hex:
-    48 0000006B 803B41                  	cmp byte[EBX],'A'
-    49 0000006E 7427                    	je N_Val
-    50 00000070 803B42                  	cmp byte[EBX],'B'
-    51 00000073 7422                    	je N_Val
-    52 00000075 803B43                  	cmp byte[EBX],'C'
-    53 00000078 741D                    	je N_Val
-    54 0000007A 803B44                  	cmp byte[EBX],'D'
-    55 0000007D 7418                    	je N_Val
-    56 0000007F 803B45                  	cmp byte[EBX],'E'
-    57 00000082 7413                    	je N_Val
-    58 00000084 803B46                  	cmp byte[EBX],'F'
-    59 00000087 740E                    	je N_Val
-    60 00000089 E982000000              	jmp Error
-    61                                  ;#############################################################################################################
-    62                                  Bin:
-    63 0000008E 43                      	inc EBX
-    64 0000008F EB98                    	jmp cicloParser
-    65                                  Hex:
-    66 00000091 43                      	inc EBX
-    67 00000092 EB95                    	jmp cicloParser
-    68                                  Oct:
-    69 00000094 43                      	inc EBX
-    70 00000095 EB92                    	jmp cicloParser
-    71                                  ;#############################################################################################################
-    72                                  N_Val:
-    73 00000097 C687[40000000]40        	mov byte[A_evaluar+EDI],'@'		;Se agrega un @ para que funcione como separador.
-    74 0000009E 47                      	inc EDI							;Se incrementa el EDI porque es el que uso para moverme por la variable.
-    75                                  cicloOperando:
-    76 0000009F 31C0                    	XOR EAX,EAX						;EAX = 0. Limpia el registro de basura.
-    77 000000A1 8A03                    	mov AL,byte[EBX]
-    78 000000A3 8887[40000000]          	mov byte[A_evaluar+EDI],AL
-    79 000000A9 47                      	inc EDI
-    80 000000AA 43                      	inc EBX
-    81 000000AB 803B00                  	cmp byte[EBX],0
-    82 000000AE 7446                    	je	Respuesta
-    83 000000B0 803B30                  	cmp byte[EBX],'0'
-    84 000000B3 723B                    	jb	Operador
-    85 000000B5 803B62                  	cmp byte[EBX],'b'
-    86 000000B8 74D4                    	je	Bin
-    87 000000BA 803B68                  	cmp byte[EBX],'h'
-    88 000000BD 74D2                    	je	Hex
-    89 000000BF 803B6F                  	cmp byte[EBX],'o'
-    90 000000C2 74D0                    	je	Oct
-    91 000000C4 803B46                  	cmp byte[EBX],'F'
-    92 000000C7 7747                    	ja	Error
-    93 000000C9 803B39                  	cmp byte[EBX],'9'
-    94 000000CC 7ED1                    	jle	cicloOperando
-    95 000000CE 7700                    	ja	N_Hex2
-    96                                  N_Hex2:
-    97 000000D0 803B41                  	cmp byte[EBX],'A'
-    98 000000D3 74CA                    	je cicloOperando
-    99 000000D5 803B42                  	cmp byte[EBX],'B'
-   100 000000D8 74C5                    	je cicloOperando
-   101 000000DA 803B43                  	cmp byte[EBX],'C'
-   102 000000DD 74C0                    	je cicloOperando
-   103 000000DF 803B44                  	cmp byte[EBX],'D'
-   104 000000E2 74BB                    	je cicloOperando
-   105 000000E4 803B45                  	cmp byte[EBX],'E'
-   106 000000E7 74B6                    	je cicloOperando
-   107 000000E9 803B46                  	cmp byte[EBX],'F'
-   108 000000EC 74B1                    	je cicloOperando
-   109 000000EE EB20                    	jmp Error
-   110                                  ;#############################################################################################################
-   111                                  Operador:
-   112 000000F0 43                      	inc EBX
-   113 000000F1 E933FFFFFF              	jmp cicloParser
-   114                                  
-   115                                  Respuesta:
-   116                                  	PutStr	msg_Final
-   116 000000F6 51                  <1>  push ECX
-   116 000000F7 B9[18000000]        <1>  mov ECX,%1
-   116 000000FC E8(00000000)        <1>  call proc_PutStr
-   116 00000101 59                  <1>  pop ECX
-   117 00000102 31C0                    	XOR EAX,EAX
-   118 00000104 58                      	pop EAX
-   119                                  	PutLInt EAX
-   119 00000105 50                  <1>  push EAX
-   119 00000106 89C0                <1>  mov EAX,%1
-   119 00000108 E8(00000000)        <1>  call proc_PutLInt
-   119 0000010D 58                  <1>  pop EAX
-   120 0000010E EB0C                    	jmp Fin
-   121                                  Error:
-   122                                  	PutStr	msg_Error
-   122 00000110 51                  <1>  push ECX
-   122 00000111 B9[2A000000]        <1>  mov ECX,%1
-   122 00000116 E8(00000000)        <1>  call proc_PutStr
-   122 0000011B 59                  <1>  pop ECX
-   123                                  Fin:
-   124                                  	nwln
-   124 0000011C E8(00000000)        <1>  call proc_nwln
-   125                                  	.EXIT
-   125 00000121 B801000000          <1>  mov EAX,1
-   125 00000126 31DB                <1>  xor EBX,EBX
-   125 00000128 CD80                <1>  int 0x80
+     2                                  %include 'Macros.asm'
+     1                              <1> ;----------------------------------------
+     2                              <1> Pow:
+     3 00000000 B801000000          <1> 	mov EAX, 1		;Respuesta minima para cualquier exponente
+     4 00000005 67E304              <1> 	jcxz SalirPow
+     5                              <1> cicloPow:
+     6                              <1> 	;DX => Base
+     7                              <1> 	;CX => Exponente
+     8                              <1> 	;AX => Respuesta
+     9 00000008 F6E2                <1> 	mul DL
+    10 0000000A E2FC                <1> 	loop cicloPow
+    11                              <1> SalirPow:
+    12 0000000C C3                  <1> 	ret
+    13                              <1> ;----------------------------------------
+    14                              <1> Complete:
+    15 0000000D 31DB                <1> 		XOR EBX,EBX
+    16 0000000F 665B                <1> 		pop BX
+    17 00000011 6683FB00            <1> 		cmp BX,0
+    18 00000015 7411                <1> 		je	Completa
+    19 00000017 C687[40000000]40    <1> 		mov byte[A_evaluar+EDI],'@'
+    20 0000001E 47                  <1> 		inc EDI
+    21 0000001F 889F[40000000]      <1> 		mov byte[A_evaluar+EDI],BL
+    22 00000025 47                  <1> 		inc EDI
+    23 00000026 EBE5                <1> 		jmp Complete
+    24                              <1> Completa:
+    25 00000028 E801000000          <1> 	call Imprimir
+    26 0000002D C3                  <1> 	ret
+    27                              <1> ;----------------------------------------
+    28                              <1> Imprimir:
+    29 0000002E 31DB                <1> 		XOR EBX,EBX
+    30 00000030 BB[40000000]        <1> 		mov EBX,A_evaluar
+    31                              <1> cicloImprime:
+    32 00000035 803B00              <1> 		cmp byte[EBX],0
+    33 00000038 740E                <1> 		je	salirImprime
+    34                              <1> 		PutCh byte[EBX]
+    34 0000003A 6650                <2>  push AX
+    34 0000003C 8A03                <2>  mov AL,%1
+    34 0000003E E8(00000000)        <2>  call proc_PutCh
+    34 00000043 6658                <2>  pop AX
+    35 00000045 43                  <1> 		inc EBX
+    36 00000046 EBED                <1> 		jmp cicloImprime
+    37                              <1> salirImprime:
+    38 00000048 C3                  <1> 	ret
+    39                              <1> ;----------------------------------------
+    40                              <1> Sum:
+    41 00000049 6631C0              <1> 	XOR AX,AX
+    42 0000004C 6631C9              <1> 	XOR CX,CX
+    43 0000004F 6631D2              <1> 	XOR DX,DX
+    44 00000052 6659                <1> 	pop CX
+    45 00000054 6658                <1> 	pop AX
+    46 00000056 6601C8              <1> 	add AX,CX
+    47 00000059 6650                <1> 	push AX
+    48 0000005B 43                  <1> 	inc EBX
+    49 0000005C 43                  <1> 	inc EBX
+    50 0000005D 31C0                <1> 	XOR EAX,EAX
+    51 0000005F 31C9                <1> 	XOR ECX,ECX
+    52 00000061 31D2                <1> 	XOR EDX,EDX
+    53 00000063 31F6                <1> 	XOR ESI,ESI
+    54 00000065 31FF                <1> 	XOR EDI,EDI
+    55 00000067 C3                  <1> 	ret
+    56                              <1> ;----------------------------------------
+    57                              <1> Rest:
+    58 00000068 6631C0              <1> 	XOR AX,AX
+    59 0000006B 6631C9              <1> 	XOR CX,CX
+    60 0000006E 6631D2              <1> 	XOR DX,DX
+    61 00000071 6659                <1> 	pop CX
+    62 00000073 6658                <1> 	pop AX
+    63 00000075 6629C8              <1> 	sub AX,CX
+    64 00000078 6650                <1> 	push AX
+    65 0000007A 43                  <1> 	inc EBX
+    66 0000007B 43                  <1> 	inc EBX
+    67 0000007C 31C0                <1> 	XOR EAX,EAX
+    68 0000007E 31C9                <1> 	XOR ECX,ECX
+    69 00000080 31D2                <1> 	XOR EDX,EDX
+    70 00000082 31F6                <1> 	XOR ESI,ESI
+    71 00000084 31FF                <1> 	XOR EDI,EDI
+    72 00000086 C3                  <1> 	ret
+    73                              <1> ;----------------------------------------
+    74                              <1> Multi:
+    75 00000087 6631C0              <1> 	XOR AX,AX
+    76 0000008A 6631C9              <1> 	XOR CX,CX
+    77 0000008D 6631D2              <1> 	XOR DX,DX
+    78 00000090 6659                <1> 	pop CX
+    79 00000092 6658                <1> 	pop AX
+    80 00000094 66F7E1              <1> 	mul CX
+    81 00000097 6650                <1> 	push AX
+    82 00000099 43                  <1> 	inc EBX
+    83 0000009A 43                  <1> 	inc EBX
+    84 0000009B 31C0                <1> 	XOR EAX,EAX
+    85 0000009D 31C9                <1> 	XOR ECX,ECX
+    86 0000009F 31D2                <1> 	XOR EDX,EDX
+    87 000000A1 31F6                <1> 	XOR ESI,ESI
+    88 000000A3 31FF                <1> 	XOR EDI,EDI
+    89 000000A5 C3                  <1> 	ret
+    90                              <1> ;----------------------------------------
+    91                              <1> Divis:
+    92 000000A6 6631C0              <1> 	XOR AX,AX
+    93 000000A9 6631C9              <1> 	XOR CX,CX
+    94 000000AC 6631D2              <1> 	XOR DX,DX
+    95 000000AF 6659                <1> 	pop CX
+    96 000000B1 6658                <1> 	pop AX
+    97 000000B3 66F7F1              <1> 	div CX
+    98 000000B6 6650                <1> 	push AX
+    99 000000B8 43                  <1> 	inc EBX
+   100 000000B9 43                  <1> 	inc EBX
+   101 000000BA 31C0                <1> 	XOR EAX,EAX
+   102 000000BC 31C9                <1> 	XOR ECX,ECX
+   103 000000BE 31D2                <1> 	XOR EDX,EDX
+   104 000000C0 31F6                <1> 	XOR ESI,ESI
+   105 000000C2 31FF                <1> 	XOR EDI,EDI
+   106 000000C4 C3                  <1> 	ret
+   107                              <1> ;----------------------------------------
+   108                              <1> Prioridad:
+   109 000000C5 80FA2B              <1> 	cmp DL,'+'
+   110 000000C8 740F                <1> 	je	Uno
+   111 000000CA 80FA2D              <1> 	cmp DL,'-'
+   112 000000CD 740A                <1> 	je	Uno
+   113 000000CF 80FA2A              <1> 	cmp DL,'*'
+   114 000000D2 740C                <1> 	je	Dos
+   115 000000D4 80FA2F              <1> 	cmp DL,'/'
+   116 000000D7 7407                <1> 	je	Dos
+   117                              <1> Uno:
+   118 000000D9 BE01000000          <1> 	mov ESI,1
+   119 000000DE EB07                <1> 	jmp Sal
+   120                              <1> Dos:
+   121 000000E0 BE02000000          <1> 	mov ESI,2
+   122 000000E5 EB00                <1> 	jmp Sal
+   123                              <1> Sal:
+   124 000000E7 C3                  <1> 	ret
+   125                              <1> ;----------------------------------------
+   126                              <1> Prioridad_Pila:
+   127 000000E8 3C00                <1> 	cmp AL,0
+   128 000000EA 7414                <1> 	je	Vacia
+   129 000000EC 3C28                <1> 	cmp AL,'('
+   130 000000EE 7410                <1> 	je	Vacia
+   131 000000F0 3C2B                <1> 	cmp AL,'+'
+   132 000000F2 74E5                <1> 	je	Uno
+   133 000000F4 3C2D                <1> 	cmp AL,'-'
+   134 000000F6 74E1                <1> 	je	Uno
+   135 000000F8 3C2A                <1> 	cmp AL,'*'
+   136 000000FA 74E4                <1> 	je	Dos
+   137 000000FC 3C2F                <1> 	cmp AL,'/'
+   138 000000FE 74E0                <1> 	je	Dos
+   139                              <1> Vacia:
+   140 00000100 BE00000000          <1> 	mov ESI,0
+   141 00000105 EB00                <1> 	jmp SalPP
+   142                              <1> SalPP:
+   143 00000107 C3                  <1> 	ret
+   144                              <1> ;----------------------------------------
+   145                              <1> conv_Binario:
+   146 00000108 31FF                <1> 	XOR EDI,EDI
+   147 0000010A 665F                <1> 	pop	DI
+   148 0000010C 6683EF30            <1> 	sub DI,'0'
+   149 00000110 6651                <1> 	push CX
+   150 00000112 31C9                <1> 	XOR ECX,ECX
+   151 00000114 668B0D[64000000]    <1> 	mov CX,[cont]
+   152 0000011B 66BA0200            <1> 	mov DX,2
+   153 0000011F E8DCFEFFFF          <1> 	call Pow
+   154 00000124 31D2                <1> 	XOR EDX,EDX
+   155 00000126 6689FA              <1> 	mov DX,DI
+   156 00000129 F6E2                <1> 	mul DL
+   157 0000012B 6659                <1> 	pop CX
+   158 0000012D 6601C1              <1> 	add CX,AX
+   159 00000130 C3                  <1> 	ret
+   160                              <1> ;----------------------------------------
+   161                              <1> conv_Octal:
+   162 00000131 31FF                <1> 	XOR EDI,EDI
+   163 00000133 665F                <1> 	pop	DI
+   164 00000135 6683EF30            <1> 	sub DI,'0'
+   165 00000139 6651                <1> 	push CX
+   166 0000013B 31C9                <1> 	XOR ECX,ECX
+   167 0000013D 668B0D[64000000]    <1> 	mov CX,[cont]
+   168 00000144 66BA0800            <1> 	mov DX,8
+   169 00000148 E8B3FEFFFF          <1> 	call Pow
+   170 0000014D 31D2                <1> 	XOR EDX,EDX
+   171 0000014F 6689FA              <1> 	mov DX,DI
+   172 00000152 F6E2                <1> 	mul DL
+   173 00000154 6659                <1> 	pop CX
+   174 00000156 6601C1              <1> 	add CX,AX
+   175 00000159 C3                  <1> 	ret
+   176                              <1> ;----------------------------------------
+   177                              <1> conv_Decimal:
+   178 0000015A 31FF                <1> 	XOR EDI,EDI
+   179 0000015C 665F                <1> 	pop	DI
+   180 0000015E 6683EF30            <1> 	sub DI,'0'
+   181 00000162 6651                <1> 	push CX
+   182 00000164 31C9                <1> 	XOR ECX,ECX
+   183 00000166 668B0D[64000000]    <1> 	mov CX,[cont]
+   184 0000016D 66BA0A00            <1> 	mov DX,10
+   185 00000171 E88AFEFFFF          <1> 	call Pow
+   186 00000176 31D2                <1> 	XOR EDX,EDX
+   187 00000178 6689FA              <1> 	mov DX,DI
+   188 0000017B F6E2                <1> 	mul DL
+   189 0000017D 6659                <1> 	pop CX
+   190 0000017F 6601C1              <1> 	add CX,AX
+   191 00000182 C3                  <1> 	ret
+   192                              <1> ;----------------------------------------
+   193                              <1> conv_Hexadecimal:
+   194 00000183 31FF                <1> 	XOR EDI,EDI
+   195 00000185 665F                <1> 	pop	DI
+   196 00000187 6683FF30            <1> 	cmp DI,'0'
+   197 0000018B 0F82F4040000        <1> 	jb	Error
+   198 00000191 6683FF39            <1> 	cmp DI,'9'
+   199 00000195 7706                <1> 	ja	N_Hex3
+   200 00000197 6683EF30            <1> 	sub DI,'0'
+   201 0000019B 6651                <1> 	push CX
+   202                              <1> N_Hex3:
+   203 0000019D 6683FF41            <1> 	cmp	DI,'A'
+   204 000001A1 741E                <1> 	je	HexA
+   205 000001A3 6683FF42            <1> 	cmp	DI,'B'
+   206 000001A7 741E                <1> 	je	HexB
+   207 000001A9 6683FF43            <1> 	cmp	DI,'C'
+   208 000001AD 741E                <1> 	je	HexC
+   209 000001AF 6683FF44            <1> 	cmp	DI,'D'
+   210 000001B3 741E                <1> 	je	HexD
+   211 000001B5 6683FF45            <1> 	cmp	DI,'E'
+   212 000001B9 741E                <1> 	je	HexE
+   213 000001BB 6683FF46            <1> 	cmp	DI,'F'
+   214 000001BF 741E                <1> 	je	HexF
+   215                              <1> HexA:
+   216 000001C1 66BF0A00            <1> 	mov DI,10
+   217 000001C5 EB1E                <1> 	jmp Conv
+   218                              <1> HexB:
+   219 000001C7 66BF0B00            <1> 	mov DI,11
+   220 000001CB EB18                <1> 	jmp Conv
+   221                              <1> HexC:
+   222 000001CD 66BF0C00            <1> 	mov DI,12
+   223 000001D1 EB12                <1> 	jmp Conv
+   224                              <1> HexD:
+   225 000001D3 66BF0D00            <1> 	mov DI,13
+   226 000001D7 EB0C                <1> 	jmp Conv
+   227                              <1> HexE:
+   228 000001D9 66BF0E00            <1> 	mov DI,14
+   229 000001DD EB06                <1> 	jmp Conv
+   230                              <1> HexF:
+   231 000001DF 66BF0F00            <1> 	mov DI,15
+   232 000001E3 EB00                <1> 	jmp Conv
+   233                              <1> Conv:
+   234 000001E5 31C9                <1> 	XOR ECX,ECX
+   235 000001E7 668B0D[64000000]    <1> 	mov CX,[cont]
+   236 000001EE 66BA1000            <1> 	mov DX,16
+   237 000001F2 E809FEFFFF          <1> 	call Pow
+   238 000001F7 31D2                <1> 	XOR EDX,EDX
+   239 000001F9 6689FA              <1> 	mov DX,DI
+   240 000001FC F6E2                <1> 	mul DL
+   241 000001FE 6659                <1> 	pop CX
+   242 00000200 6601C1              <1> 	add CX,AX
+   243 00000203 C3                  <1> 	ret
+   244                              <1> ;----------------------------------------
+     3                                  
+     4                                  .DATA
+     4                              <1>  segment .data
+     5 00000000 496E67726573652075-     msg_Inicio		db		'Ingrese una expresion: ',0
+     5 00000009 6E6120657870726573-
+     5 00000012 696F6E3A2000       
+     6 00000018 4C6120726573707565-     msg_Final		db		'La respuesta es: ',0
+     6 00000021 7374612065733A2000 
+     7 0000002A 6C6120657870726573-     msg_Post		db		'la expresion en postfijo es: ',0
+     7 00000033 696F6E20656E20706F-
+     7 0000003C 737466696A6F206573-
+     7 00000045 3A2000             
+     8 00000048 4572726F722E204361-     msg_Error		db		'Error. Caracter invalido.',0
+     8 00000051 72616374657220696E-
+     8 0000005A 76616C69646F2E00   
+     9 00000062 00                      nueva_prec		db		0
+    10 00000063 00                      pila_prec		db		0
+    11 00000064 00                      cont 			db		0
+    12 00000065 00                      largo			db		0
+    13                                  
+    14                                  .UDATA
+    14                              <1>  segment .bss
+    15 00000000 <res 00000040>          expresion		resb	64
+    16 00000040 <res 00000080>          A_evaluar		resb	128
+    17                                  
+    18                                  .CODE
+    18                              <1>  segment .data
+    18                              <1>  segment .bss
+    18                              <1>  segment .text
+    19                                  	.STARTUP
+    19                              <1> 
+    19                              <1>  global _start
+    19                              <1> _start:
+    20 00000204 55                      	push EBP
+    21 00000205 89E5                    	mov EBP,ESP
+    22                                  	PutStr msg_Inicio
+    22 00000207 51                  <1>  push ECX
+    22 00000208 B9[00000000]        <1>  mov ECX,%1
+    22 0000020D E8(00000000)        <1>  call proc_PutStr
+    22 00000212 59                  <1>  pop ECX
+    23                                  	GetStr expresion
+    23 00000213 56                  <1>  push ESI
+    23 00000214 57                  <1>  push EDI
+    23 00000215 BF[00000000]        <1>  mov EDI,%1
+    23 0000021A BE51000000          <1>  mov ESI,%2
+    23 0000021F E8(00000000)        <1>  call proc_GetStr
+    23 00000224 5F                  <1>  pop EDI
+    23 00000225 5E                  <1>  pop ESI
+    24 00000226 BB[00000000]            	mov EBX, expresion
+    25 0000022B 31FF                    	XOR EDI,EDI
+    26                                  ;#############################################################################################################
+    27                                  cicloParser:
+    28 0000022D 31C0                    	XOR EAX,EAX
+    29 0000022F 31C9                    	XOR ECX,ECX
+    30 00000231 31D2                    	XOR EDX,EDX
+    31 00000233 31F6                    	XOR ESI,ESI
+    32 00000235 803B00                  	cmp byte[EBX],0
+    33 00000238 0F8412040000            	je	PostFijo
+    34 0000023E 803B28                  	cmp byte[EBX],'('
+    35 00000241 0F823E040000            	jb	Error
+    36 00000247 803B62                  	cmp byte[EBX],'b'
+    37 0000024A 7469                    	je	Bin
+    38 0000024C 803B68                  	cmp byte[EBX],'h'
+    39 0000024F 0F8491000000            	je	Hex
+    40 00000255 803B6F                  	cmp byte[EBX],'o'
+    41 00000258 0F84F0000000            	je	Oct
+    42 0000025E 803B46                  	cmp byte[EBX],'F'
+    43 00000261 0F871E040000            	ja	Error
+    44 00000267 803B30                  	cmp byte[EBX],'0'
+    45 0000026A 0F8278010000            	jb	Operador
+    46 00000270 803B39                  	cmp byte[EBX],'9'
+    47 00000273 7705                    	ja	N_Hex
+    48 00000275 E902010000              	jmp N_Val
+    49                                  N_Hex:
+    50 0000027A 803B41                  	cmp byte[EBX],'A'
+    51 0000027D 0F84F9000000            	je N_Val
+    52 00000283 803B42                  	cmp byte[EBX],'B'
+    53 00000286 0F84F0000000            	je N_Val
+    54 0000028C 803B43                  	cmp byte[EBX],'C'
+    55 0000028F 0F84E7000000            	je N_Val
+    56 00000295 803B44                  	cmp byte[EBX],'D'
+    57 00000298 0F84DE000000            	je N_Val
+    58 0000029E 803B45                  	cmp byte[EBX],'E'
+    59 000002A1 0F84D5000000            	je N_Val
+    60 000002A7 803B46                  	cmp byte[EBX],'F'
+    61 000002AA 0F84CC000000            	je N_Val
+    62 000002B0 E9D0030000              	jmp Error
+    63                                  ;#############################################################################################################
+    64                                  Bin:
+    65 000002B5 803D[40000000]00        	cmp byte[A_evaluar],0
+    66 000002BC 0F84C3030000            	je	Error
+    67 000002C2 31F6                    	XOR ESI,ESI
+    68 000002C4 89FE                    	mov ESI,EDI
+    69 000002C6 4E                      	dec ESI
+    70 000002C7 80BE[40000000]30        	cmp byte[A_evaluar+ESI],'0'
+    71 000002CE 0F82B1030000            	jb	Error
+    72 000002D4 80BE[40000000]31        	cmp byte[A_evaluar+ESI],'1'
+    73 000002DB 0F87A4030000            	ja	Error
+    74 000002E1 E99E000000              	jmp cicloOperando
+    75                                  Hex:
+    76 000002E6 803D[40000000]00        	cmp byte[A_evaluar],0		;¿No hay ningun numero?
+    77 000002ED 0F8492030000            	je	Error					;Da error porque tiene que haber un numero entre 0 y 9 o una letra entre A y F antes del caracter de 'h'
+    78 000002F3 89FE                    	mov ESI,EDI					;Se usa ESi para poder moverme por la variable A_evaluar sin perder la posicion por la que voy
+    79 000002F5 4E                      	dec ESI						;Se reduce para ver el carcater anterior a la posicion a la que estoy.
+    80 000002F6 80BE[40000000]46        	cmp byte[A_evaluar+ESI],'F'	;Pregunto si el caracter anterior es un F
+    81 000002FD 0F8782030000            	ja	Error					;Si es mayor que una F, entonces hay un error en la expresion ingresada.
+    82 00000303 747F                    	je	cicloOperando
+    83 00000305 80BE[40000000]30        	cmp byte[A_evaluar+ESI],'0'	;Pregunto si el caracter anterior es un 0
+    84 0000030C 0F8273030000            	jb	Error					;Si es menor que 0, entonces hay un error de sintaxis en la expresion ingresada.
+    85 00000312 80BE[40000000]41        	cmp byte[A_evaluar+ESI],'A'	;Pregunto si el caracter anterior es un A
+    86 00000319 7469                    	je	cicloOperando			;Si es igual que una F, es un carcater valido.
+    87 0000031B 80BE[40000000]42        	cmp byte[A_evaluar+ESI],'B'	;Pregunto si el caracter anterior es un B
+    88 00000322 7460                    	je	cicloOperando			;Si es igual que una F, es un carcater valido.
+    89 00000324 80BE[40000000]43        	cmp byte[A_evaluar+ESI],'C'	;Pregunto si el caracter anterior es un C
+    90 0000032B 7457                    	je	cicloOperando			;Si es igual que una F, es un carcater valido.
+    91 0000032D 80BE[40000000]44        	cmp byte[A_evaluar+ESI],'D'	;Pregunto si el caracter anterior es un D
+    92 00000334 744E                    	je	cicloOperando			;Si es igual que una F, es un carcater valido.
+    93 00000336 80BE[40000000]45        	cmp byte[A_evaluar+ESI],'E'	;Pregunto si el caracter anterior es un E
+    94 0000033D 7445                    	je	cicloOperando			;Si es igual que una F, es un carcater valido.
+    95 0000033F 80BE[40000000]39        	cmp byte[A_evaluar+ESI],'9'	;Pregunto si es un caracter de 9
+    96 00000346 0F8739030000            	ja	Error					;Si es mayor que 9 pero ninguno de los anteriores, entonces es un error de sintaxis.
+    97 0000034C EB36                    	jmp cicloOperando
+    98                                  Oct:
+    99 0000034E 803D[40000000]00        	cmp byte[A_evaluar],0
+   100 00000355 0F842A030000            	je	Error
+   101 0000035B 31F6                    	XOR ESI,ESI
+   102 0000035D 89FE                    	mov ESI,EDI
+   103 0000035F 4E                      	dec ESI
+   104 00000360 80BE[40000000]30        	cmp byte[A_evaluar+ESI],'0'
+   105 00000367 0F8218030000            	jb	Error
+   106 0000036D 80BE[40000000]37        	cmp byte[A_evaluar+ESI],'7'
+   107 00000374 0F870B030000            	ja	Error
+   108 0000037A EB08                    	jmp cicloOperando
+   109                                  ;#############################################################################################################
+   110                                  N_Val:
+   111 0000037C C687[40000000]40        	mov byte[A_evaluar+EDI],'@'		;Se agrega un @ para que funcione como separador.
+   112 00000383 47                      	inc EDI							;Se incrementa el EDI porque es el que uso para moverme por la variable.
+   113                                  cicloOperando:
+   114 00000384 31C0                    	XOR EAX,EAX						;EAX = 0. Limpia el registro de basura.
+   115 00000386 8A03                    	mov AL,byte[EBX]
+   116 00000388 8887[40000000]          	mov byte[A_evaluar+EDI],AL
+   117 0000038E 47                      	inc EDI
+   118 0000038F 43                      	inc EBX
+   119 00000390 803B00                  	cmp byte[EBX],0
+   120 00000393 0F84B7020000            	je	PostFijo
+   121 00000399 803B30                  	cmp byte[EBX],'0'
+   122 0000039C 724A                    	jb	Operador
+   123 0000039E 803B62                  	cmp byte[EBX],'b'
+   124 000003A1 0F840EFFFFFF            	je	Bin
+   125 000003A7 803B68                  	cmp byte[EBX],'h'
+   126 000003AA 0F8436FFFFFF            	je	Hex
+   127 000003B0 803B6F                  	cmp byte[EBX],'o'
+   128 000003B3 7499                    	je	Oct
+   129 000003B5 803B46                  	cmp byte[EBX],'F'
+   130 000003B8 0F87C7020000            	ja	Error
+   131 000003BE 803B39                  	cmp byte[EBX],'9'
+   132 000003C1 7EC1                    	jle	cicloOperando
+   133 000003C3 7700                    	ja	N_Hex2
+   134                                  N_Hex2:
+   135 000003C5 803B41                  	cmp byte[EBX],'A'
+   136 000003C8 74BA                    	je cicloOperando
+   137 000003CA 803B42                  	cmp byte[EBX],'B'
+   138 000003CD 74B5                    	je cicloOperando
+   139 000003CF 803B43                  	cmp byte[EBX],'C'
+   140 000003D2 74B0                    	je cicloOperando
+   141 000003D4 803B44                  	cmp byte[EBX],'D'
+   142 000003D7 74AB                    	je cicloOperando
+   143 000003D9 803B45                  	cmp byte[EBX],'E'
+   144 000003DC 74A6                    	je cicloOperando
+   145 000003DE 803B46                  	cmp byte[EBX],'F'
+   146 000003E1 74A1                    	je cicloOperando
+   147 000003E3 E99D020000              	jmp Error
+   148                                  ;#############################################################################################################
+   149                                  Operador:
+   150 000003E8 803B2F                  	cmp byte[EBX],'/'
+   151 000003EB 7319                    	jae	Valido
+   152 000003ED 803B2D                  	cmp byte[EBX],'-'
+   153 000003F0 7414                    	je	Valido
+   154 000003F2 803B2B                  	cmp byte[EBX],'+'
+   155 000003F5 740F                    	je	Valido
+   156 000003F7 803B2A                  	cmp byte[EBX],'*'
+   157 000003FA 740A                    	je	Valido
+   158 000003FC 803B28                  	cmp byte[EBX],'('
+   159 000003FF 7467                    	je	Parentesis
+   160 00000401 803B29                  	cmp byte[EBX],')'
+   161 00000404 746F                    	je	Parentesis2
+   162                                  ;#############################################################################################################
+   163                                  Valido:
+   164 00000406 31D2                    	XOR	EDX,EDX					;EDX = 0. Para limpiar el registro de basura
+   165 00000408 8A13                    	mov DL,byte[EBX]			;Se mueve el caracter a evaluar a memoria.
+   166 0000040A 31F6                    	XOR ESI,ESI					;ESI = 0. Para limpiar el registro de basura.
+   167 0000040C E8B4FCFFFF              	call Prioridad					;Se llama a el proc para que en el ESI, me quede la prioridad de la operacion
+   168 00000411 31C9                    	XOR ECX,ECX					;ECX = 0. Para limpiar el registro de basura.
+   169 00000413 8935[62000000]          	mov [nueva_prec],ESI		;Se mueve a la variable la prioriodad de la nueva operacion
+   170 00000419 668B0D[62000000]        	mov CX,[nueva_prec]			;Se mueve a memoria dicha prioridad
+   171                                  ;#############################################################################################################
+   172                                  cicloPrioridad:
+   173 00000420 31F6                    	XOR ESI,ESI					;ESI = 0. Para limpiar el registro de basura.
+   174 00000422 31C0                    	XOR EAX,EAX					;EAX = 0. Para limpiar el registro de basura.
+   175 00000424 6658                    	pop AX						;Se saca el tope de la pila
+   176 00000426 6650                    	push AX						;pero no lo elimino aun.
+   177 00000428 E8BBFCFFFF              	call Prioridad_Pila				;Se llama a el proc para que en el ESI, me quede la prioridad de la operacion
+   178 0000042D 31D2                    	XOR EDX,EDX					;EDX = 0. Para limpiar el registro de basura.
+   179                                  	
+   180 0000042F 8935[63000000]          	mov [pila_prec],ESI		;
+   181 00000435 6631D2                  	XOR DX,DX
+   182 00000438 668B15[63000000]        	mov DX,[pila_prec]
+   183                                  	
+   184 0000043F 6639D1                  	cmp CX,DX					;Se compara la prioridad de la nueva operacion contra la del tope de la pila.
+   185 00000442 7F02                    	jg	Mayor					;Salta si la nueva prioridad es mayor.
+   186 00000444 7E0D                    	jle MenorIgual				;Salta si la prioridad de la pila es mayor.
+   187                                  ;#############################################################################################################
+   188                                  Mayor:
+   189 00000446 31C0                    	XOR EAX,EAX					;EAX = 0. Para limpiar el registro de basura.
+   190 00000448 668B03                  	mov AX,[EBX]				;Se mueve al AX el carcater que se evaluo anteriormente
+   191 0000044B 6650                    	push AX						;Se guarda en pila el nuevo caracter de operacion.
+   192 0000044D 43                      	inc EBX						;Se incrementa el EBX para que se mueva al siguiente caracter a evaluar.
+   193 0000044E E9DAFDFFFF              	jmp cicloParser				;Salta al ciclo del parser para evaluar el siguiente caracter.
+   194                                  	
+   195                                  MenorIgual:
+   196 00000453 31C0                    	XOR EAX,EAX					;EAX = 0. Para limpiar el registro de basura.
+   197 00000455 6658                    	pop AX						;Se saca el tope de la pila
+   198 00000457 C687[40000000]40        	mov byte[A_evaluar+EDI],'@'	;Se agrega a la variable en postfijo un nuevo separador.
+   199 0000045E 47                      	inc EDI						;Se incrementa el EDI para que se mueva a la siguiente posicion a insertar.
+   200 0000045F 8887[40000000]          	mov byte[A_evaluar+EDI],AL	;Se agrega a la variable a postfijo el caracter de operacion del tope de la pila.
+   201 00000465 47                      	inc EDI						;Se incrementa el EDI para que se mueva a la siguiente posicion a insertar.
+   202 00000466 EBB8                    	jmp cicloPrioridad			;Repite el ciclo con el nuevo caracter.
+   203                                  ;#############################################################################################################
+   204                                  Parentesis:
+   205 00000468 31D2                    	XOR EDX,EDX					;EDX = 0. Para limpiar el registro de basura.
+   206 0000046A 668B13                  	mov DX,[EBX]			;Se mueve al DX el carcater de (
+   207 0000046D 6652                    	push DX						;y se guarda en la pila.
+   208 0000046F 43                      	inc EBX						;Se incrementa el EBX para que se mueva al siguiente caracter a evaluar.
+   209 00000470 E9B8FDFFFF              	jmp	cicloParser				;Repite el ciclo desde el inicio con el nuevo caracter.
+   210                                  	
+   211                                  Parentesis2:
+   212 00000475 31C0                    	XOR EAX,EAX					;EAX = 0. Para limpiar el registro de basura.
+   213 00000477 6658                    	pop AX						;Obtiene el carcater en el tope de la pila.
+   214 00000479 3C28                    	cmp AL,'('					;Es el tope de la pila un caracter de (
+   215 0000047B 7417                    	je	Siguiente				;Si es un carcater (, salte a siguiente.
+   216 0000047D 6683F800                	cmp AX,0					;¿Llegue al final de la expresion?
+   217 00000481 7411                    	je	Siguiente				;Si llegue al final de la expresion, salte a siguiente.
+   218 00000483 C687[40000000]40        	mov byte[A_evaluar+EDI],'@'	;Se agrega a la variable en postfijo un nuevo separador.
+   219 0000048A 47                      	inc EDI						;Se incrementa el EDI para que se mueva a la siguiente posicion a insertar.
+   220 0000048B 8887[40000000]          	mov byte[A_evaluar+EDI],AL	;Se agrega a la variable a postfijo el caracter de operacion del tope de la pila.
+   221 00000491 47                      	inc EDI						;Se incrementa el EDI para que se mueva a la siguiente posicion a insertar.
+   222 00000492 EBE1                    	jmp Parentesis2				;Se repite el ciclo con el siguiente carcater de la pila.
+   223                                  Siguiente:
+   224 00000494 43                      	inc EBX						;Se incrementa el EBX para que se mueva al siguiente caracter a evaluar.
+   225 00000495 E993FDFFFF              	jmp cicloParser				;Repite el ciclo desde el inicio con el nuevo caracter.
+   226                                  ;#############################################################################################################
+   227                                  Evaluar:
+   228                                  	nwln						;Se borran todos los registros
+   228 0000049A E8(00000000)        <1>  call proc_nwln
+   229 0000049F 31C0                    	XOR EAX,EAX
+   230 000004A1 31DB                    	XOR EBX,EBX
+   231 000004A3 31C9                    	XOR ECX,ECX
+   232 000004A5 31D2                    	XOR EDX,EDX
+   233 000004A7 31F6                    	XOR ESI,ESI
+   234 000004A9 31FF                    	XOR EDI,EDI
+   235                                  	
+   236 000004AB BB[40000000]            	mov EBX,A_evaluar			;Se mueve al EBX la variable en postfijo
+   237                                  cicloEvalua:
+   238 000004B0 80FB00                  	cmp BL,0					;¿llegue al final de la expresion?
+   239 000004B3 0F84B2010000            	je	Respuesta				;Salte al final del programa si ya llegue al final de la expresion. Da la respuesta
+   240 000004B9 80FB40                  	cmp BL,'@'					;Pregunto si es un caracter de separador.
+   241 000004BC 7420                    	je	Separador				;Salte si es un separador.
+   242 000004BE 80FB30                  	cmp BL,'0'					;Pregunta si es un caracter de 0
+   243 000004C1 0F824D010000            	jb	Operacion				;Si es menor que '0', es una operacion
+   244                                  Num:
+   245 000004C7 31C0                    	XOR EAX,EAX					;EAX = 0. Para limpiar el registro de basura
+   246 000004C9 668B03                  	mov AX,[EBX]				;AX = caracter a evaluar
+   247 000004CC 6650                    	push AX						;Se guarda el caracter en pila.
+   248                                  								
+   249                                  								;Incrementa la variable largo al hacer
+   250 000004CE 8B35[65000000]          	mov ESI,[largo]				;ESI = largo
+   251 000004D4 46                      	inc ESI						;ESI++
+   252 000004D5 8935[65000000]          	mov [largo],ESI				;largo = ESI
+   253                                  	
+   254 000004DB 43                      	inc EBX						;Se incrementa el EBX para que se mueva al siguiente caracter a evaluar.
+   255 000004DC EBD2                    	jmp cicloEvalua				;Repite el ciclo con el nuevo caracter a evaluar.
+   256                                  ;#############################################################################################################
+   257                                  Separador:
+   258 000004DE 31C0                    	XOR EAX,EAX					;EAX = 0. Para limpiar el registro de basura
+   259 000004E0 66A1[65000000]          	mov AX,[largo]				;AX = largo del numero
+   260 000004E6 6683F800                	cmp AX,0					;¿El largo es 0?
+   261 000004EA 0F8403010000            	je Siguiente2				;Si es 0, salga del ciclo del separador
+   262 000004F0 31FF                    	XOR EDI,EDI					;EDI = 0. Para limpiar el registro de basura.
+   263 000004F2 665F                    	pop DI						;DI = caracter en el tope de la pila
+   264                                  	
+   265 000004F4 6683FF62                	cmp DI,'b'					;¿Es un numero binario?
+   266                                  	;Decrementa largo
+   267 000004F8 8B35[65000000]          	mov ESI,[largo]
+   268 000004FE 4E                      	dec ESI
+   269 000004FF 8935[65000000]          	mov [largo],ESI
+   270 00000505 742C                    	je	conv_Bin				;Conviertalo a decimal
+   271                                  	
+   272 00000507 6683FF6F                	cmp DI,'o'					;¿Es un numero octal?
+   273                                  	;Decrementa largo
+   274 0000050B 8B35[65000000]          	mov ESI,[largo]
+   275 00000511 4E                      	dec ESI
+   276 00000512 8935[65000000]          	mov [largo],ESI
+   277 00000518 744C                    	je	conv_Oc					;Conviertalo a decimal
+   278                                  	
+   279 0000051A 6683FF68                	cmp DI,'h'					;¿Es un numero binario?
+   280                                  	;Decrementa largo
+   281 0000051E 8B35[65000000]          	mov ESI,[largo]
+   282 00000524 4E                      	dec ESI
+   283 00000525 8935[65000000]          	mov [largo],ESI
+   284 0000052B 0F8493000000            	je	conv_Hex				;Conviertalo a decimal
+   285 00000531 EB62                    	jmp conv_Dec				;Conviertalo a decimal
+   286                                  ;#############################################################################################################
+   287                                  conv_Bin:
+   288                                  	
+   289 00000533 31C0                    	XOR EAX,EAX					;EAX = 0. Para limpiar el registro de basura
+   290 00000535 66A1[65000000]          	mov AX,[largo]				;AX = largo del numero
+   291 0000053B 6683F800                	cmp AX,0					;¿El largo es 0?
+   292 0000053F 0F84AE000000            	je Siguiente2				;Si es 0, salga del ciclo del separador
+   293                                  	
+   294 00000545 E8BEFBFFFF              	call conv_Binario
+   295                                  	;Incrementa contador
+   296 0000054A 8B35[64000000]          	mov ESI,[cont]
+   297 00000550 46                      	inc ESI
+   298 00000551 8935[64000000]          	mov [cont],ESI
+   299                                  	
+   300                                  	;Decrementa largo
+   301 00000557 8B35[65000000]          	mov ESI,[largo]
+   302 0000055D 4E                      	dec ESI
+   303 0000055E 8935[65000000]          	mov [largo],ESI
+   304 00000564 EBCD                    	jmp conv_Bin
+   305                                  ;#############################################################################################################
+   306                                  conv_Oc:
+   307 00000566 31C0                    	XOR EAX,EAX					;EAX = 0. Para limpiar el registro de basura
+   308 00000568 66A1[65000000]          	mov AX,[largo]				;AX = largo del numero
+   309 0000056E 6683F800                	cmp AX,0					;¿El largo es 0?
+   310 00000572 747F                    	je Siguiente2				;Si es 0, salga del ciclo del separador
+   311                                  	
+   312 00000574 E8B8FBFFFF              	call conv_Octal
+   313                                  	;Incrementa contador
+   314 00000579 8B35[64000000]          	mov ESI,[cont]
+   315 0000057F 46                      	inc ESI
+   316 00000580 8935[64000000]          	mov [cont],ESI
+   317                                  	
+   318                                  	;Decrementa largo
+   319 00000586 8B35[65000000]          	mov ESI,[largo]
+   320 0000058C 4E                      	dec ESI
+   321 0000058D 8935[65000000]          	mov [largo],ESI
+   322 00000593 EBD1                    	jmp conv_Oc
+   323                                  ;#############################################################################################################
+   324                                  conv_Dec:
+   325 00000595 31C0                    	XOR EAX,EAX					;EAX = 0. Para limpiar el registro de basura
+   326 00000597 66A1[65000000]          	mov AX,[largo]				;AX = largo del numero
+   327 0000059D 6683F800                	cmp AX,0					;¿El largo es 0?
+   328 000005A1 7450                    	je Siguiente2				;Si es 0, salga del ciclo del separador
+   329                                  	
+   330 000005A3 E8B2FBFFFF              	call conv_Decimal
+   331                                  	;Incrementa contador
+   332 000005A8 8B35[64000000]          	mov ESI,[cont]
+   333 000005AE 46                      	inc ESI
+   334 000005AF 8935[64000000]          	mov [cont],ESI
+   335                                  	
+   336                                  	;Decrementa largo
+   337 000005B5 8B35[65000000]          	mov ESI,[largo]
+   338 000005BB 4E                      	dec ESI
+   339 000005BC 8935[65000000]          	mov [largo],ESI
+   340 000005C2 EBD1                    	jmp conv_Dec
+   341                                  ;#############################################################################################################
+   342                                  conv_Hex:
+   343 000005C4 31C0                    	XOR EAX,EAX					;EAX = 0. Para limpiar el registro de basura
+   344 000005C6 66A1[65000000]          	mov AX,[largo]				;AX = largo del numero
+   345 000005CC 6683F800                	cmp AX,0					;¿El largo es 0?
+   346 000005D0 7421                    	je Siguiente2				;Si es 0, salga del ciclo del separador
+   347                                  	
+   348 000005D2 E8ACFBFFFF              	call conv_Hexadecimal
+   349                                  	;Incrementa contador
+   350 000005D7 8B35[64000000]          	mov ESI,[cont]
+   351 000005DD 46                      	inc ESI
+   352 000005DE 8935[64000000]          	mov [cont],ESI
+   353                                  	
+   354                                  	;Decrementa largo
+   355 000005E4 8B35[65000000]          	mov ESI,[largo]
+   356 000005EA 4E                      	dec ESI
+   357 000005EB 8935[65000000]          	mov [largo],ESI
+   358 000005F1 EBD1                    	jmp conv_Hex
+   359                                  ;#############################################################################################################
+   360                                  Siguiente2:
+   361 000005F3 6651                    	push CX
+   362 000005F5 6631C9                  	XOR CX,CX
+   363 000005F8 43                      	inc EBX
+   364 000005F9 BE00000000              	mov ESI,0
+   365 000005FE 8935[65000000]          	mov [largo],ESI
+   366 00000604 BE00000000              	mov ESI,0
+   367 00000609 8935[64000000]          	mov [cont],ESI
+   368 0000060F E99CFEFFFF              	jmp cicloEvalua
+   369                                  ;#############################################################################################################
+   370                                  Operacion:
+   371 00000614 803B2B                  	cmp byte[EBX],'+'
+   372 00000617 740F                    	je  Suma
+   373 00000619 803B2D                  	cmp byte[EBX],'-'
+   374 0000061C 7414                    	je  Resta
+   375 0000061E 803B2A                  	cmp byte[EBX],'*'
+   376 00000621 7419                    	je  Multiplicacion
+   377 00000623 803B2F                  	cmp byte[EBX],'/'
+   378 00000626 741E                    	je  Division
+   379                                  ;#############################################################################################################
+   380                                  Suma:
+   381 00000628 E81CFAFFFF              	call Sum
+   382 0000062D E97EFEFFFF              	jmp cicloEvalua
+   383                                  ;#############################################################################################################
+   384                                  Resta:
+   385 00000632 E831FAFFFF              	call Rest
+   386 00000637 E974FEFFFF              	jmp cicloEvalua
+   387                                  ;#############################################################################################################
+   388                                  Multiplicacion:
+   389 0000063C E846FAFFFF              	call Multi
+   390 00000641 E96AFEFFFF              	jmp cicloEvalua
+   391                                  ;#############################################################################################################
+   392                                  Division:
+   393 00000646 E85BFAFFFF              	call Divis
+   394 0000064B E960FEFFFF              	jmp cicloEvalua
+   395                                  ;#############################################################################################################
+   396                                  
+   397                                  PostFijo:
+   398                                  	PutStr	msg_Post
+   398 00000650 51                  <1>  push ECX
+   398 00000651 B9[2A000000]        <1>  mov ECX,%1
+   398 00000656 E8(00000000)        <1>  call proc_PutStr
+   398 0000065B 59                  <1>  pop ECX
+   399 0000065C E8ACF9FFFF              	call Complete
+   400 00000661 E934FEFFFF              	jmp	Evaluar
+   401                                  	nwln
+   401 00000666 E8(00000000)        <1>  call proc_nwln
+   402                                  Respuesta:
+   403                                  	PutStr	msg_Final
+   403 0000066B 51                  <1>  push ECX
+   403 0000066C B9[18000000]        <1>  mov ECX,%1
+   403 00000671 E8(00000000)        <1>  call proc_PutStr
+   403 00000676 59                  <1>  pop ECX
+   404 00000677 31C0                    	XOR EAX,EAX
+   405 00000679 58                      	pop EAX
+   406                                  	PutLInt EAX
+   406 0000067A 50                  <1>  push EAX
+   406 0000067B 89C0                <1>  mov EAX,%1
+   406 0000067D E8(00000000)        <1>  call proc_PutLInt
+   406 00000682 58                  <1>  pop EAX
+   407 00000683 EB0C                    	jmp Fin
+   408                                  Error:
+   409                                  	PutStr	msg_Error
+   409 00000685 51                  <1>  push ECX
+   409 00000686 B9[48000000]        <1>  mov ECX,%1
+   409 0000068B E8(00000000)        <1>  call proc_PutStr
+   409 00000690 59                  <1>  pop ECX
+   410                                  Fin:
+   411                                  	nwln
+   411 00000691 E8(00000000)        <1>  call proc_nwln
+   412                                  	.EXIT
+   412 00000696 B801000000          <1>  mov EAX,1
+   412 0000069B 31DB                <1>  xor EBX,EBX
+   412 0000069D CD80                <1>  int 0x80
