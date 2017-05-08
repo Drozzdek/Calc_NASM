@@ -509,15 +509,21 @@ Prioridad_Pila:
 	cmp AL,'('
 	je	Vacia
 	cmp AL,'+'
-	je	Uno
+	je	Uno2
 	cmp AL,'-'
-	je	Uno
+	je	Uno2
 	cmp AL,'*'
-	je	Dos
+	je	Dos2
 	cmp AL,'/'
-	je	Dos
+	je	Dos2
 Vacia:
 	mov ESI,0
+	jmp SalPP
+Uno2:
+	mov ESI,1
+	jmp SalPP
+Dos2:
+	mov ESI,2
 	jmp SalPP
 SalPP:
 	jmp JValido2
